@@ -8,8 +8,8 @@ from langchain.chat_models import ChatOpenAI
 from langchain.memory import ConversationBufferMemory
 from langchain.chains import ConversationalRetrievalChain
 from htmlTemplates import css, bot_template, user_template
-from langchain.llms import HuggingFaceHub
-from utils import makedirs
+from langchain.vectorstores import Chroma
+
 
 def get_pdf_text(pdf_docs):
     text = ""
@@ -37,6 +37,11 @@ def get_vectorstore(text_chunks):
     vectorstore = FAISS.from_texts(texts=text_chunks, embedding=embeddings)
     return vectorstore
 
+def get_vectordtore_db():
+    # load from disk
+    embedding_function = OpenAIEmbeddings()
+    vectorstore_db = Chroma(persist_directory="./chroma_db", embedding_function=embedding_function)
+    return vectorstore_db
 
 def get_conversation_chain(vectorstore):
     llm = ChatOpenAI()
@@ -76,30 +81,15 @@ def main():
     if "chat_history" not in st.session_state:
         st.session_state.chat_history = None
 
+    if st.session_state.conversation is None and st.session_state.conversation is None:
+        vectorstore = get_vectordtore_db()
+        st.session_state.conversation = get_conversation_chain(vectorstore)
+
+
     st.header("Chat with your OWN data 💬")
     user_question = st.text_input("Ask a question about your documents:")
     if user_question:
         handle_userinput(user_question)
-
-    with st.sidebar:
-        st.subheader("Your documents")
-        pdf_docs = st.file_uploader(
-            "Upload your PDFs here and click on 'Process'", accept_multiple_files=True)
-        if st.button("Process"):
-            with st.spinner("Processing"):
-                # get pdf text
-                raw_text = get_pdf_text(pdf_docs)
-
-                # get the text chunks
-                text_chunks = get_text_chunks(raw_text)
-
-                # create vector store
-                vectorstore = get_vectorstore(text_chunks)
-                print("get_vectorstore")
-
-                # create conversation chain
-                st.session_state.conversation = get_conversation_chain(
-                    vectorstore)
 
 
 if __name__ == '__main__':

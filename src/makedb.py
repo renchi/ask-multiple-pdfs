@@ -6,7 +6,6 @@ from langchain.vectorstores import Chroma
 from langchain.text_splitter import CharacterTextSplitter
 
 import os
-import chromadb
 
 def main():
     documents = []
@@ -32,19 +31,9 @@ def main():
     documents = text_splitter.split_documents(documents)
 
     # Convert the document chunks to embedding and save them to the vector store
-    from chromadb.config import Settings
-    persist_directory = "./data"
-    client_settings = Settings(anonymized_telemetry=False,
-                               is_persistent=True,
-                               persist_directory=persist_directory)
-    collection_metadata = {"hnsw:num_threads": -1}
-
-    vectordb = Chroma.from_documents(documents=documents,
-                               embedding=OpenAIEmbeddings(),
-                               persist_directory=persist_directory,
-                               collection_name='UserData',
-                               client_settings=client_settings,
-                                collection_metadata=collection_metadata)
+    embedding_function = OpenAIEmbeddings()
+    vectordb = Chroma.from_documents(documents, embedding_function, persist_directory="./chroma_db")
+    # save to disk
     vectordb.persist()
 
 if __name__ == '__main__':
